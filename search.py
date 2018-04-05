@@ -10,6 +10,8 @@ import heapq
 from ast import literal_eval
 from Queue import Queue
 from nltk.stem import PorterStemmer
+import synonyms
+import listops
 
 def sanitize(phrase):
     """Sanitizes input by removing special characters, numbers, and collapsing whitespace"""
@@ -84,25 +86,25 @@ def vectorize_query(di, N, query):
     #return the normalized vector
     return normalize(vector, su**.5)
 
-def get_posts(di, po, query):
+def get_posts(di, po, syn_query):
     """ 
-        Gets the postings list for each unique token in the query
+        Gets the postings list for each unique token in the query. Expects
+        the tokens to be already stemmed
     """
     posts = {}
-    ps = PorterStemmer()
 
-    #goes through each token in the query and returns its postings list
-    for i in query:  
-        i = str(ps.stem(i))
+    # go through each token's synonym list
+    for syns in syn_query:
+        #goes through each token in the synonym list and returns its postings list
+        for i in syns:  
+            #only returns the first instance of a token
+            if posts.get(i, False): continue
 
-        #only returns the first instance of a token
-        if posts.get(i, False): continue
-
-        #only retrieves postings with corresponding dictionary entries
-        resp = di.get(i, [])
-        if len(resp) > 0:    
-            po.seek(int(resp[1]))
-            posts[i]=literal_eval(po.readline())
+            #only retrieves postings with corresponding dictionary entries
+            resp = di.get(i, [])
+            if len(resp) > 0:    
+                po.seek(int(resp[1]))
+                posts[i]=literal_eval(po.readline())
     return posts
 
 def get_candidates(postings, le):
@@ -179,78 +181,50 @@ def sort(li):
     #li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
 
-def get_positional_queries(query):
+def query2syn_query(query):
     """
-        Split the given query into a list of positional queries to require
+        Given list of query terms, return list-of-lists of synonyms
     """
     ps = PorterStemmer()
 
-    res = []
+    # TODO stop treating entire query as one positional query
+    syn_query = synonyms.get(query)
+    for syns in syn_query:
+        for idx, s in enumerate(syns):
+            syns[idx] = str(ps.stem(s))
 
-    # TODO: expand to parse query, currently treats entire query as positional
-    row = []
-    for term in query:
-        term = ps.stem(term)
-        row.append([ term ]) # expand to include similar_tos
-    res.append(row)
-
-    return res
-
-def positional_and(l1, l2):
-    """
-        Given two lists of postitions within one file, return all locations
-        in l2 where the l1 contains the previous position
-    """
-
-    # TODO could be combined to handle all positional items at once with a heap
-    #   (add (doc pos, term pos) tuples to heap, remove min until get all term pos in order)
-
-    i = 0
-    j = 0
-
-    res = []
-    while i < len(l1) and j < len(l2):
-        p1 = l1[i]+1
-        p2 = l2[j]
-        if p1 == p2:
-            res.append(p2)
-            i += 1
-            j += 1
-        elif p1 < p2:
-            i += 1
-        else:
-            j += 1
-
-    return res
-
+    return syn_query
 
 def get_positional(candidates, pos_queries):
     """
         Only pass through the candidates that pass the given positional queries
     """
+    print(pos_queries)
+
     passed_candidates = {}
     for doc_id, doc in candidates.items():
         passed = True
 
         # Check all positional queries for this document
         for pq in pos_queries:
-            words = pq[0]
-            word = words[0] # TODO: extend to handle similar_tos (easiest with heap strategy outlined in positional_add(...))
+            # Merge all synonyms of the first word to be l1
+            syns = pq[0]
+            l1 = doc.get(syns[0],[None,None])[1]
+            for i in range(1,len(syns)):
+                l2 = doc.get(syns[i],[None,None])[1]
+                l1 = listops.or_merge(l1,l2)
 
-            if not word in doc:
-                passed = False
-                break
+            # Iteratively join with other words
+            for j in range(1,len(pq)):
+                # Merge all synonyms of word j to be list 2
+                syns = pq[j]
+                l2 = doc.get(syns[0],[None,None])[1]
+                for k in range(1,len(syns)):
+                    l3 = doc.get(syns[k],[None,None])[1]
+                    l2 = listops.or_merge(l2,l3)
 
-            l1 = doc[word][1]
-            for i in range(1,len(pq)):
-                words = pq[i]
-                word = words[0] # TODO: extend to handle similar_tos
-
-                if not word in doc:
-                    l1 = []
-                else:
-                    l2 = doc[word][1]
-                    l1 = positional_and(l1,l2)
+                # AND together l1 and l2
+                l1 = listops.positional_and(l1,l2)
 
             if len(l1) == 0:
                 passed = False
@@ -293,12 +267,13 @@ def evaluate(di, le, po, out, query):
     """
     print query
 
+    syn_query = query2syn_query(query)
     q_vector = vectorize_query(di,len(le), query)
-    postings = get_posts(di, po, query)
+    postings = get_posts(di, po, syn_query)
     candidates = get_candidates(postings, le)
-    candidates = get_positional(candidates, get_positional_queries(query))
+    candidates = get_positional(candidates, [ syn_query ]) # TODO split query into the specific positional queries
     window = get_window(candidates)
-    final = get_final(candidates, q_vector, window)
+    final = get_final(candidates, q_vector, window) # TODO how to handle synonym queries when vectorizing query and chosing final
     out.write(" ".join(final)+"\n")
 
 def search(dict, post, queries, out):
