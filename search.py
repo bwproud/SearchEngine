@@ -179,6 +179,89 @@ def sort(li):
     #li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
 
+def get_positional_queries(query):
+    """
+        Split the given query into a list of positional queries to require
+    """
+    ps = PorterStemmer()
+
+    res = []
+
+    # TODO: expand to parse query, currently treats entire query as positional
+    row = []
+    for term in query:
+        term = ps.stem(term)
+        row.append([ term ]) # expand to include similar_tos
+    res.append(row)
+
+    return res
+
+def positional_and(l1, l2):
+    """
+        Given two lists of postitions within one file, return all locations
+        in l2 where the l1 contains the previous position
+    """
+
+    # TODO could be combined to handle all positional items at once with a heap
+    #   (add (doc pos, term pos) tuples to heap, remove min until get all term pos in order)
+
+    i = 0
+    j = 0
+
+    res = []
+    while i < len(l1) and j < len(l2):
+        p1 = l1[i]+1
+        p2 = l2[j]
+        if p1 == p2:
+            res.append(p2)
+            i += 1
+            j += 1
+        elif p1 < p2:
+            i += 1
+        else:
+            j += 1
+
+    return res
+
+
+def get_positional(candidates, pos_queries):
+    """
+        Only pass through the candidates that pass the given positional queries
+    """
+    passed_candidates = {}
+    for doc_id, doc in candidates.items():
+        passed = True
+
+        # Check all positional queries for this document
+        for pq in pos_queries:
+            words = pq[0]
+            word = words[0] # TODO: extend to handle similar_tos (easiest with heap strategy outlined in positional_add(...))
+
+            if not word in doc:
+                passed = False
+                break
+
+            l1 = doc[word][1]
+            for i in range(1,len(pq)):
+                words = pq[i]
+                word = words[0] # TODO: extend to handle similar_tos
+
+                if not word in doc:
+                    l1 = []
+                else:
+                    l2 = doc[word][1]
+                    l1 = positional_and(l1,l2)
+
+            if len(l1) == 0:
+                passed = False
+                break
+
+        if passed:
+
+            passed_candidates[str(doc_id)] = doc
+
+    return passed_candidates
+
 def get_final(candidates, q_vector, window):
     """
         Performs the cross product of the query vector and every candidate document
@@ -208,9 +291,12 @@ def evaluate(di, le, po, out, query):
         in the query, and then gets the final listing of the 10 highest ranked documents
         for the query using the previous 3 results. These 10 documents are then written to a file
     """
+    print query
+
     q_vector = vectorize_query(di,len(le), query)
     postings = get_posts(di, po, query)
     candidates = get_candidates(postings, le)
+    candidates = get_positional(candidates, get_positional_queries(query))
     window = get_window(candidates)
     final = get_final(candidates, q_vector, window)
     out.write(" ".join(final)+"\n")
