@@ -10,6 +10,7 @@ import heapq
 from ast import literal_eval
 from Queue import Queue
 from nltk.stem import PorterStemmer
+from Synonym import query2syn_query
 
 def positional(di, le, po, out, query, syn):
     """
@@ -19,6 +20,7 @@ def positional(di, le, po, out, query, syn):
         for the query using the previous 3 results. These 10 documents are then written to a file
     """
     print "positional"
+    print syn
     phrases = [i for i in query if i.count(" ")]
     words = get_posts(di,po,syn)
     pdocs = {}
@@ -27,7 +29,8 @@ def positional(di, le, po, out, query, syn):
     for i in words:
         final.append(list(set([j[0] for j in words[i]])))
     for i in phrases:
-        final.append(get_positional_posts(di, po, i))
+        syn_query = query2syn_query(i.split(" "))
+        final.append(get_positional_posts(di, po, syn_query))
     for i in final:
         for j in i:
             pdocs[j] = pdocs.get(j,0)+1
@@ -74,27 +77,34 @@ def get_positional_posts(di, po, query):
     """
     docs = {}
     ps = PorterStemmer()
+    ind = {}
     final = []
     count=0
     #goes through each token in the query and returns its postings list
-    for i in query.split(" "):  
-        i = str(ps.stem(i))
+    for i in range(len(query)):  
+        syn_list = query[i]
+        o_word = query[i][0]
+        ind[o_word] = count
         count+=1
+        for k in range(len(syn_list)):
+            word = syn_list[k]
 
-        #only retrieves postings with corresponding dictionary entries
-        resp = di.get(i, [])
-        if len(resp) > 0:    
-            po.seek(int(resp[1]))
-            posts = literal_eval(po.readline())
-            for i in posts:
-                print i
-                li = docs.get(i[0], [])
-                li.append(i[2])
-                docs[i[0]] = li
-        else:
-            return [(-1,-1,[])]
+            #only retrieves postings with corresponding dictionary entries
+            resp = di.get(word, [])
+            if len(resp) > 0:    
+                po.seek(int(resp[1]))
+                posts = literal_eval(po.readline())
+                for j in posts:
+                    li = docs.get(j[0], {})
+                    listings = li.get(o_word, [])
+                    listings=sorted(list(set(listings+j[2])))
+                    li[o_word] = listings
+                    docs[j[0]] = li
     for i in docs:
         if len(docs[i])==count:
-            if present(docs[i], count):
+            li=[0]*count
+            for j in docs[i]:
+                li[ind[j]]=docs[i][j]
+            if present(li, count):
                 final.append(i)
     return final
