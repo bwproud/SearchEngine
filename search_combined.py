@@ -150,6 +150,7 @@ def get_positional_posts(di, po, query):
             po.seek(int(resp[1]))
             posts = literal_eval(po.readline())
             for i in posts:
+                print i
                 li = docs.get(i[0], [])
                 li.append(i[2])
                 docs[i[0]] = li
