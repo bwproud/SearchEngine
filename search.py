@@ -11,7 +11,7 @@ from ast import literal_eval
 from Queue import Queue
 from nltk.stem import PorterStemmer
 from nltk.corpus import wordnet as wn
-from Evaluate import evaluate
+from Evaluate import query_parser
 from Positional import positional
 from Synonym import query2syn_query
 
@@ -79,7 +79,7 @@ def search(dict, post, queries, out):
     for query in q:
         syn_query = query2syn_query(query)
         if not pos:
-            evaluate(di,l,p,o,query,syn_query)
+            query_parser(di,l,p,o,query,syn_query)
         else:
             positional(di,l,p,o,query,syn_query)
     p.close()
