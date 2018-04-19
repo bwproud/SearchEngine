@@ -10,6 +10,51 @@ import heapq
 from ast import literal_eval
 from Queue import Queue
 from nltk.stem import PorterStemmer
+from Synonym import query2syn_query
+from Positional import get_positional_posts
+
+def query_parser(di, le, po, out, query, syn):
+    ps = power_set(query)
+    ans = []
+    seen = {}
+    for i in range(len(ps)):
+        se = ps[i]
+        level = []
+        for j in se:
+            level.append(get_positional_posts(di, po, j))
+        for j in range(len(se)):
+            scalar = 0
+            for k in range(len(se[j])):
+                scalar+=math.log((float(len(le))+1)/di[se[j][k][0]][0],10)
+            factor = 0 if len(level[j]) == 0 else (float(1)/len(level[j]))* scalar
+            level[j]=(factor,level[j])
+        level = sorted(level, key = lambda x: x[0], reverse = True)
+        for j in level:
+            for doc in j[1]:
+                doc = str(doc)
+                if not seen.get(doc, False):
+                    ans.append(doc)
+                    seen[doc]=True
+    final = evaluate(di, le, po, out, query, syn)
+    for doc in final:
+        if not seen.get(doc, False):
+            ans.append(doc)
+            seen[doc] = True
+    out.write(" ".join(ans)+"\n")
+
+def power_set(q):
+    li=[]
+    count = len(q)
+    if count > 4:
+        count = 4
+    while count > 1:
+        a=[]
+        for i in range(len(q)-count+1):
+            syn_query = query2syn_query(q[i:i+count])
+            a.append(syn_query)
+        li.append(a)
+        count-=1
+    return li
 
 def evaluate(di, le, po, out, query, syn):
     """
@@ -24,8 +69,7 @@ def evaluate(di, le, po, out, query, syn):
     candidates = get_candidates(postings, le)
 
     window = get_window(candidates)
-    final = get_final(candidates, q_vector, window)
-    out.write(" ".join(final)+"\n")
+    return get_final(candidates, q_vector, window)
 
 def normalize(vector, size):
     """ 
