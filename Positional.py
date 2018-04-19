@@ -135,7 +135,6 @@ def get_positional_posts(di, po, query):
             if present(li, count):
                 final.append(i)
 
-
     return final
 
 def occurances(lists, count):
@@ -157,7 +156,7 @@ def get_positional_posts_with_tf(di, po, query):
         returns [ [ docID, tf ]... ]
             where tf is scaled by the length of the query and a constant scaling factor C
     """
-    C = 1.2
+    C = 1
 
     docs = {}
     ps = PorterStemmer()
