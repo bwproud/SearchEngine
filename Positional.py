@@ -8,7 +8,6 @@ import time
 import math
 import heapq
 from ast import literal_eval
-from Queue import Queue
 from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
 
@@ -21,8 +20,8 @@ def positional(di, le, po, out, query, syn):
     """
     TOP_N = 100
 
-    print "positional"
-    print syn
+    print("positional")
+    print(syn)
     phrases = [i for i in query if i.count(" ")]
     words = get_posts(di,po,syn)
     pdocs = {}

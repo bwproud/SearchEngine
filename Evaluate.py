@@ -8,7 +8,6 @@ import time
 import math
 import heapq
 from ast import literal_eval
-from Queue import Queue
 from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
 from Positional import get_positional_posts
@@ -63,7 +62,7 @@ def evaluate(di, le, po, out, query, syn):
         in the query, and then gets the final listing of the 10 highest ranked documents
         for the query using the previous 3 results. These 10 documents are then written to a file
     """
-    print "not positional"
+    print("not positional")
     q_vector = vectorize_query(di,len(le), query)
     postings = get_posts(di, po, syn)
     candidates = get_candidates(postings, le)

@@ -8,7 +8,6 @@ import time
 import math
 import heapq
 from ast import literal_eval
-from Queue import Queue
 from nltk.stem import PorterStemmer
 from nltk.corpus import wordnet as wn
 from Evaluate import query_parser
@@ -92,7 +91,7 @@ dictionary_file = postings_file = file_of_queries = output_file_of_results = Non
 	
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'd:p:q:o:')
-except getopt.GetoptError, err:
+except:
     usage()
     sys.exit(2)
 
@@ -106,7 +105,7 @@ for o, a in opts:
     elif o == '-o':
         file_of_output = a
     else:
-        assert False, "unhandled option"
+        raise "unhandled option"
 
 if dictionary_file == None or postings_file == None or file_of_queries == None or file_of_output == None :
     usage()

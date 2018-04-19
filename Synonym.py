@@ -8,7 +8,6 @@ import time
 import math
 import heapq
 from ast import literal_eval
-from Queue import Queue
 from nltk.stem import PorterStemmer
 from nltk.corpus import wordnet as wn
 
