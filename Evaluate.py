@@ -22,6 +22,7 @@ def evaluate(di, le, po, out, query, syn):
     q_vector = vectorize_query(di,len(le), query)
     postings = get_posts(di, po, syn)
     candidates = get_candidates(postings, le)
+
     window = get_window(candidates)
     final = get_final(candidates, q_vector, window)
     out.write(" ".join(final)+"\n")
@@ -163,6 +164,27 @@ def sort(li):
     #then sort on number of present words
     li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
+
+def get_top_candidates(candidates, q_vector):
+    """
+        Given a query and candidate set, return the top 5 candidates as ranked by tf-idf
+        returns: [ docID... ]
+    """
+    top=[]
+    for doc in candidates:
+        su = 0
+        #Gets the rankings of a given document through its cross product with the query vector
+        for word in q_vector:
+            su += q_vector[word]*candidates[doc].get(word, [0])[0]
+
+        #adds it to the result set if the result set is less than 10. Then sorts the result set
+        v.append((doc, su, len(candidates[doc]), window[doc]))
+    
+    #then sort on document ranking
+    top = sorted(top,key=lambda x: x[1], reverse=True)
+
+    #return just the document ids of the documents with the highest rankings
+    return [i[0] for i in top[:5]]
 
 def get_final(candidates, q_vector, window):
     """
