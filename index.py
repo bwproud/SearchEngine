@@ -14,6 +14,7 @@ from nltk.corpus import stopwords
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 from multiprocessing import Pool
+from _pickle import Pickler
 
 def sanitize_sentence(phrase):
     """Sanitizes sentences by removing special characters"""
@@ -89,7 +90,7 @@ def index(input, dict, post):
         with Pool(processes=cpus) as pool:
             result = pool.map(func=index_row, iterable=reader)
             for row in result:
-                docID = row[0]
+                docID = int(row[0])
                 doc_documents = row[1]
                 doc_positions = row[2]
 
@@ -124,30 +125,38 @@ def index(input, dict, post):
 
     print("prepare dictionary")
     #prepare dictionary for output to postings list by including term freqencies
-    for key in d:
-        tf = []
-        for doc in d[key]:
-            tf.append((doc, documents[doc][key], positions[doc][key]))
-        d[key]=tf
+    for word in d:
+        entry = []
+        for doc in d[word]:
+            entry.append((doc, documents[doc][word], positions[doc][word]))
+        d[word] = entry
 
-    o = open(dict, 'w')
-    p = open(post, 'w')
-    le = open("lengths.txt",'w')
+    fp_o = open(dict, 'wb')
+    o = Pickler(fp_o)
+
+    fp_p = open(post, 'wb')
+    p = Pickler(fp_p)
+
+    fp_le = open("lengths.txt", 'wb')
+    le = Pickler(fp_le)
+
     print("start write")
     #writes to the posting list and dictionary file                     
-    for i in sorted(d):
-        try:
-            o.write("%s %s %s\n" % (i.encode('utf-8'), df[i], p.tell()))
-            p.write("%s\n"%(d[i],))
-        except:
-            print(i) 
+    for word in sorted(d):
+        o.dump(word)
+        o.dump(df[word])
+        o.dump(fp_p.tell())
+
+        p.dump(d[word])
 
     #output out all document lengths
     for file in copy:
-        le.write("%s %s\n" % (file, length[file]))  
+        le.dump(file)
+        le.dump(length[file])
 
-    o.close()
-    p.close()
+    fp_o.close()
+    fp_p.close()
+    fp_le.close()
 
 def usage():
     print("usage: " + sys.argv[0] + " -i directory-of-documents -d dictionary-file -p postings-file")

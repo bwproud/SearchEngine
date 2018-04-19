@@ -7,6 +7,7 @@ import getopt
 import time
 import math
 import heapq
+import Postings
 from ast import literal_eval
 from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
@@ -88,11 +89,10 @@ def get_posts(di, po, syn):
             if words.get(j, False): continue
 
             #only retrieves postings with corresponding dictionary entries
-            resp = di.get(j, [])
-            if len(resp) > 0:    
-                po.seek(int(resp[1]))
-                line=literal_eval(po.readline())
-                words[word]=words.get(word,[])+line
+            postings = Postings.get_postings(word, di, po)
+            if postings != None:
+                words[word]=words.get(word,[])+postings
+
     return words
 
 def get_positional_posts(di, po, query):
@@ -114,11 +114,9 @@ def get_positional_posts(di, po, query):
             word = syn_list[k]
 
             #only retrieves postings with corresponding dictionary entries
-            resp = di.get(word, [])
-            if len(resp) > 0:    
-                po.seek(int(resp[1]))
-                posts = literal_eval(po.readline())
-                for j in posts:
+            postings = Postings.get_postings(word, di, po)
+            if postings != None:
+                for j in postings:
                     li = docs.get(j[0], {})
                     listings = li.get(o_word, [])
                     listings=sorted(list(set(listings+j[2])))
@@ -172,11 +170,9 @@ def get_positional_posts_with_tf(di, po, query):
             word = syn_list[k]
 
             #only retrieves postings with corresponding dictionary entries
-            resp = di.get(word, [])
-            if len(resp) > 0:    
-                po.seek(int(resp[1]))
-                posts = literal_eval(po.readline())
-                for j in posts:
+            postings = Postings.get_postings(word, di, po)
+            if postings != None:
+                for j in postings:
                     li = docs.get(j[0], {})
                     listings = li.get(o_word, [])
                     listings=sorted(list(set(listings+j[2])))

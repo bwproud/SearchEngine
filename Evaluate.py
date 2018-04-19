@@ -7,6 +7,7 @@ import getopt
 import time
 import math
 import heapq
+import Postings
 from ast import literal_eval
 from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
@@ -37,7 +38,7 @@ def query_parser(di, le, po, out, query, syn):
     final = evaluate(di, le, po, out, query, syn)
     for doc in final:
         if not seen.get(doc, False):
-            ans.append(doc)
+            ans.append(str(doc))
             seen[doc] = True
     out.write(" ".join(ans)+"\n")
 
@@ -117,7 +118,7 @@ def get_candidates(postings, le):
     candidates = {}
     for word in postings:
         for i in postings[word]:
-            doc = str(i[0])
+            doc = i[0]
             if not candidates.get(doc, False):
                 candidates[doc]={}
             if candidates[doc].get(word, False):
@@ -164,16 +165,14 @@ def get_posts(di, po, syn):
         word = syn[i][0]  
         for k in range(len(syn[i])):
 
-            j=syn[i][k]
+            word = syn[i][k]
             #only returns the first instance of a token
-            if words.get(j, False): continue
+            if words.get(word, False): continue
 
             #only retrieves postings with corresponding dictionary entries
-            resp = di.get(j, [])
-            if len(resp) > 0:    
-                po.seek(int(resp[1]))
-                line=literal_eval(po.readline())
-                words[word]=words.get(word,[])+line
+            postings = Postings.get_postings(word, di, po)
+            if postings != None:
+                words[word]=words.get(word,[])+postings
     return words
 
 def get_window(candidates):

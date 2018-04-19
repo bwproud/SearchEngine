@@ -13,6 +13,7 @@ from nltk.corpus import wordnet as wn
 from Evaluate import query_parser
 from Positional import positional
 from Synonym import query2syn_query
+from _pickle import Unpickler
 
 def sanitize(phrase):
     """Sanitizes input by removing special characters, numbers, and collapsing whitespace"""
@@ -21,21 +22,45 @@ def sanitize(phrase):
 def getdict(dict):
     """retrieves and populates the dictionary from the dictionary file"""
     di={}
-    o = open(dict, 'r')
-    for line in o:
-        li=line.strip().split(' ')
-        di[li[0]]=(int(li[1]), li[2])
-    o.close()
+
+    fp_o = open(dict, 'rb')
+
+    # get length of file
+    fp_o.seek(0,2)
+    end = fp_o.tell()
+    fp_o.seek(0,0)
+
+    o = Unpickler(fp_o)
+    while fp_o.tell() < end:
+        word = o.load()
+
+        df = o.load()
+        tell_idx = o.load()
+
+        di[word] = (df, tell_idx)
+    fp_o.close()
+
     return di  
 
 def getlength():
     """retrieves the length of every document and stores in a dictionary"""
     le={}
-    o = open("lengths.txt", 'r')
-    for line in o:
-        li=line.strip().split(' ')
-        le[li[0]]=li[1]
-    o.close()
+
+    fp_o = open("lengths.txt", 'rb')
+
+    # get length of file
+    fp_o.seek(0,2)
+    end = fp_o.tell()
+    fp_o.seek(0,0)
+
+    o = Unpickler(fp_o)
+    while fp_o.tell() < end:
+        file = o.load()
+        length = o.load()
+
+        le[file] = length
+    fp_o.close()
+
     return le  
 
 def getqueries(queries):
@@ -73,7 +98,7 @@ def search(dict, post, queries, out):
     di = getdict(dict)
     q, pos = getqueries(queries)
     l = getlength()
-    p = open(post, 'r')
+    p = open(post, 'rb')
     o = open(out, 'w')
     for query in q:
         syn_query = query2syn_query(query)
@@ -88,7 +113,7 @@ def usage():
     print( "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
-	
+  
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'd:p:q:o:')
 except:
