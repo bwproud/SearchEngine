@@ -53,7 +53,6 @@ def positional(di, le, po, out, query, syn):
             docID = doc_entry[0]
             tf = doc_entry[1]
 
-            # log(...) gives additional weight to phrases
             if docID in scores:
                 scores[docID][1] += tf
             else:

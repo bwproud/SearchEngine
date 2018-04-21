@@ -6,7 +6,8 @@ def get_postings(word, di, po):
     """
       word to get posting for
       di the dictionary object
-      po the postings file
+      po the postings file 
+      returns: [ (docID,wf,[positions,...]),... ]
     """
     resp = di.get(word, [])
     if len(resp) > 0:    

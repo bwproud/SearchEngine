@@ -13,6 +13,8 @@ from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
 from Positional import get_positional_posts
 
+ps = PorterStemmer()
+
 def query_parser(di, le, po, out, query, syn):
     ps = power_set(query)
     ans = []
@@ -68,6 +70,8 @@ def evaluate(di, le, po, out, query, syn):
     postings = get_posts(di, po, syn)
     candidates = get_candidates(postings, le)
 
+    q_vector = expand_query(postings,candidates,q_vector)
+
     window = get_window(candidates)
     return get_final(candidates, q_vector, window)
 
@@ -84,10 +88,10 @@ def vectorize_query(di, N, query):
         Vectorizes the query by getting the term frequencies of each token in the query,
         weighting these tokens, multiplying the weighted term frequency with the inverse
         document frequency, and then normalizing the resulting vector
+        returns: { token: normalized_weight }
     """
     vector = {}
     su = 0
-    ps = PorterStemmer()
 
     #Gets the term frequencies of each term in the query
     for i in query:
@@ -157,7 +161,8 @@ def min_window(k):
 
 def get_posts(di, po, syn):
     """ 
-        Gets the postings list for each unique token in the query
+        Gets the postings list for all synonyms of each unique token in the query
+        returns: { word: [ (docID,wf,[positions,...]),... ] }
     """
     words = {}
     #goes through each token in the query and returns its postings list
@@ -207,6 +212,47 @@ def sort(li):
     li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
 
+def get_tf(po,docID,token):
+    """
+    po a postings dictionary that contains the postings for the token
+    docID the document we want to get the tf for
+    token the term we want the tf for
+    """ 
+    if not token in po: return 0.0 
+    postings = po[token] # [ (docID,wf,[positions,...]),... ]
+    for posting in postings:
+        posting_docID = posting[0]
+        if posting_docID == docID:
+            return 1.0 # posting[1] # wf
+    return 0.0
+
+
+def expand_query(po,candidates,q_vector):
+    ALPHA = 0.8
+    tops = get_top_candidates(candidates,q_vector)
+
+    sums = {}
+    for token in q_vector:
+        su = 0
+        for top_docID in tops:
+            su += get_tf(po,top_docID,token)
+        sums[token] = su
+
+    print(sums)
+
+    res = {}
+    res_su = 0
+    for token in sums:
+        new_val = q_vector[token] + ALPHA*sums[token]/float(len(tops))
+        res[token] = new_val
+        res_su += new_val**2
+    res = normalize(res,res_su**0.5)
+
+    print(q_vector)
+    print(res)
+
+    return res
+
 def get_top_candidates(candidates, q_vector):
     """
         Given a query and candidate set, return the top 5 candidates as ranked by tf-idf
@@ -218,15 +264,12 @@ def get_top_candidates(candidates, q_vector):
         #Gets the rankings of a given document through its cross product with the query vector
         for word in q_vector:
             su += q_vector[word]*candidates[doc].get(word, [0])[0]
-
-        #adds it to the result set if the result set is less than 10. Then sorts the result set
-        v.append((doc, su, len(candidates[doc]), window[doc]))
+        top.append((doc, su))
     
     #then sort on document ranking
-    top = sorted(top,key=lambda x: x[1], reverse=True)
-
+    top = heapq.nlargest(min(len(top),5), top, key=lambda x: x[1])
     #return just the document ids of the documents with the highest rankings
-    return [i[0] for i in top[:5]]
+    return [i[0] for i in top]
 
 def get_final(candidates, q_vector, window):
     """
