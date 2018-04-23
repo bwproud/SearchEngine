@@ -14,14 +14,34 @@ from nltk.corpus import wordnet as wn
 from nltk.corpus import stopwords
 
 def query_parser(di, le, po, out, query, syn):
+    """ 
+        Given a query, gets the powerset of that query and then
+        performs positional queries using the generated powerset.
+        The incremental nature of this parser means that the earliest
+        documents in the results are those that have large positional phrases
+        from the query present in the document or those that have very high
+        rankings. Ignores positional queries with high document return numbers
+        as that likely indicates that the phrase was common (eg "telephone call").
+        Finally after perfoming the positional queries, a normal tf-idf round of
+        evaluation is undertaken to add in documents not yet seen
+    """
+    
+    #gets the power set of query terms
     ps = power_set(query)
     ans = []
     seen = {}
+    
+    #goes through each level of a powerset
+    #a level is identified by how many query words are present
     for i in range(len(ps)):
         se = ps[i]
         level = []
+
+        #perform a positional query for each permutation in the current level
         for j in se:
             level.append(get_positional_posts(di, po, j))
+
+        #calculate the rarity of the terms in a given permutation to be used in ordering
         for j in range(len(se)):
             scalar = 0
             for k in range(len(se[j])):
@@ -29,7 +49,12 @@ def query_parser(di, le, po, out, query, syn):
                     scalar+=math.log((float(len(le))+1)/di[se[j][k][0]][0],10)
             factor = 0 if len(level[j]) == 0 else (float(1)/len(level[j]))* scalar
             level[j]=(factor,level[j])
+
+        #sorts based off the rarity factor of the terms
         level = sorted(level, key = lambda x: x[0], reverse = True)
+
+        #adds the documents to the result set if the number of terms for a given
+        #positional query isn't too high (indicating a common term)
         for j in level:
             if len(j[1]) >= 500: continue
             for doc in j[1]:
@@ -37,6 +62,8 @@ def query_parser(di, le, po, out, query, syn):
                 if not seen.get(doc, False):
                     ans.append(doc)
                     seen[doc]=True
+
+    #finally performs a normal evaluation and adds results
     final = evaluate(di, le, po, out, query, syn)
     for doc in final:
         if not seen.get(doc, False):
@@ -45,6 +72,10 @@ def query_parser(di, le, po, out, query, syn):
     out.write(" ".join(ans)+"\n")
 
 def power_set(q):
+    """ 
+        Given a query, returns a powerset of all words in the query,
+        in order to be used in the query parser
+    """
     li=[]
     count = len(q)
     if count > 4:
@@ -133,11 +164,14 @@ def get_candidates(postings, le):
     return candidates
 
 def min_window(k):
+    """ 
+        Algorithm to find minimum window length between k lists. Uses
+        a heap.
+    """
     heap = []
     p=[0 for i in range(len(k))]
     min_r = 99999999
     ma=0
-    #tu=[]
     for i in range(len(k)):
         if k[i][0]>ma:
             ma=k[i][0]
@@ -146,7 +180,6 @@ def min_window(k):
         mi = heapq.heappop(heap)
         if ma-mi[0] < min_r:
             min_r = ma-mi[0]
-            tu=[mi[0],ma]
         p[mi[1]]+=1
         if(p[mi[1]]>=len(k[mi[1]])):
             return min_r
@@ -157,6 +190,10 @@ def min_window(k):
             heapq.heappush(heap, (num,mi[1]))
 
 def get_window(candidates):
+    """ 
+        Returns the minimum window between all relevant present
+        words in a document. Used in ranking
+    """
     window={}
     for doc in candidates:
         li=[]
@@ -207,16 +244,15 @@ def get_final(candidates, q_vector, window):
         final.append((doc, su, len(candidates[doc]), window[doc]))
     print ma
     final = sort(final)
-    #print(final[:10])
+
     #return just the document ids of the documents with the highest rankings
     return [i[0] for i in final if i[1]>(ma*.15)]
 
 def positional(di, le, po, out, query, syn):
     """
-        Gets a vectorized version of the query, gets the postings associated with
-        each term in the query, gets the dictionary of documents who contain tokens
-        in the query, and then gets the final listing of the 10 highest ranked documents
-        for the query using the previous 3 results. These 10 documents are then written to a file
+        First gets the documents who contain the individual terms(if any) 
+        in a positional query. Then gets the documents who contain the phrasal
+        queries. Then orders ranks the resulting set of documents
     """
     print "positional"
     phrases = [i for i in query if i.count(" ")]
@@ -226,31 +262,40 @@ def positional(di, le, po, out, query, syn):
     phrase_count = {}
     final = []
     docs = []
-    f = []
+
+    #gets the documents who have the given individual terms
     for i in words:
         li = list(set([j[0] for j in words[i]]))
         final.append(li)
     
+    #gets the documents who contain the phrasal queries
     for i in phrases:
         q = i.split(" ")
         syn_query = query2syn_query([i for i in q if i not in stops])
         li = get_positional_posts(di, po, syn_query)
         final.append(li)
 
+    #gets number of relevant terms/phrases present in each candidate document
     for i in range(len(final)):
         for j in final[i]:
             if i >= len(words):
                 phrase_count[j] = phrase_count.get(j,0)+1
             pdocs[j] = pdocs.get(j,0)+1
-            if pdocs[j] == len(query):
-                 f.append(str(j))
+
+    #adds the documents to the list of final documents
     for doc in pdocs:
         docs.append((str(doc), pdocs[doc], phrase_count.get(doc,0)))
+
+    #sorts the documents using a radix sort and then outputs the documents
     docs = sorted(docs, key = lambda x: x[1], reverse = True)
     docs = sorted(docs, key = lambda x: x[2], reverse = True)
-    out.write(" ".join([i[0] for i in docs])+"\n")
+    out.write(" ".join([i[0] for i in docs if i[2]>0])+"\n")
 
 def present(lists, end):
+    """ 
+        Given a list of positions of words for a single document,
+        returns whether all words appear consecutively at least once
+    """
     p={}
     for i in range(len(lists)):
         for j in lists[i]:
@@ -268,6 +313,8 @@ def get_posts(di, po, syn):
     #goes through each token in the query and returns its postings list
     for i in range(len(syn)):
         word = syn[i][0]  
+
+        #goes through each synonym for each word
         for k in range(len(syn[i])):
 
             j=syn[i][k]
