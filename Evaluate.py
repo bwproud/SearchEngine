@@ -246,6 +246,14 @@ def get_final(candidates, q_vector, window):
         final.append((doc, su, len(candidates[doc]), window[doc]))
     
     final = sort(final)
+
+    # Cutoff
+    max_score = final[0][1]
+    threashold = max_score * 0.3
+    final = list(filter(lambda x: x[1] > threashold, final))
+
     #print(final[:10])
+    print(len(final))
+
     #return just the document ids of the documents with the highest rankings
     return [i[0] for i in final]
