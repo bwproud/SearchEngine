@@ -137,7 +137,7 @@ def index(input, dict, post):
     #writes to the posting list and dictionary file                     
     for i in sorted(d):
         try:
-            o.write("%s %s %s\n" % (i.encode('utf-8'), df[i], p.tell()))
+            o.write("%s %s %s\n" % (i, df[i], p.tell()))
             p.write("%s\n"%(d[i],))
         except:
             print(i) 
