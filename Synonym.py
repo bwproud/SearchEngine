@@ -15,6 +15,7 @@ def for_term(term, term_pos=None):
     """
         Given a word, return a list of synonyms
     """
+
     if term_pos == 'NN':
         search_poses = [ wn.NOUN, wn.VERB, wn.ADJ ]
     elif term_pos == 'VB':
@@ -25,6 +26,8 @@ def for_term(term, term_pos=None):
         search_poses = [ wn.VERB, wn.ADV ]
     else:
         search_poses = [ wn.VERB, wn.NOUN, wn.ADJ ]
+
+    # search_poses = [ wn.VERB, wn.NOUN, wn.ADJ, wn.ADV ]
 
     res = [ term ]
     for pos in search_poses:
