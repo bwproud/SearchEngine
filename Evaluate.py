@@ -229,7 +229,7 @@ def get_tf(po,docID,token):
 
 def expand_query(po,candidates,q_vector):
     ALPHA = 0.8
-    tops = get_top_candidates(candidates,q_vector)
+    tops = get_top_candidates(candidates,q_vector,0.8)
 
     sums = {}
     for token in q_vector:
@@ -253,21 +253,25 @@ def expand_query(po,candidates,q_vector):
 
     return res
 
-def get_top_candidates(candidates, q_vector):
+def get_top_candidates(candidates, q_vector, threshold):
     """
         Given a query and candidate set, return the top 5 candidates as ranked by tf-idf
         returns: [ docID... ]
     """
     top=[]
+    max_score = 0
     for doc in candidates:
         su = 0
         #Gets the rankings of a given document through its cross product with the query vector
         for word in q_vector:
-            su += q_vector[word]*candidates[doc].get(word, [0])[0]
+            score = q_vector[word]*candidates[doc].get(word, [0])[0]
+            su += score
+            if score > max_score:
+                max_score = score
         top.append((doc, su))
     
     #then sort on document ranking
-    top = heapq.nlargest(min(len(top),5), top, key=lambda x: x[1])
+    top = sorted(filter(lambda x: x[1] > max_score*threshold, top), key=lambda x: x[1]) # heapq.nlargest(min(len(top),5), top, key=lambda x: x[1])
     #return just the document ids of the documents with the highest rankings
     return [i[0] for i in top]
 

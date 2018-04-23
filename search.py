@@ -22,44 +22,22 @@ def sanitize(phrase):
 def getdict(dict):
     """retrieves and populates the dictionary from the dictionary file"""
     di={}
-
-    fp_o = open(dict, 'rb')
-
-    # get length of file
-    fp_o.seek(0,2)
-    end = fp_o.tell()
-    fp_o.seek(0,0)
-
-    o = Unpickler(fp_o)
-    while fp_o.tell() < end:
-        word = o.load()
-
-        df = o.load()
-        tell_idx = o.load()
-
-        di[word] = (df, tell_idx)
-    fp_o.close()
-
+    o = open(dict, 'r')
+    for line in o:
+        li=line.strip().split(' ')
+        di[li[0]]=(int(li[1]), li[2])
+    o.close()
     return di  
 
 def getlength():
     """retrieves the length of every document and stores in a dictionary"""
     le={}
+    o = open("lengths.txt", 'r')
+    for line in o:
+        li=line.strip().split(' ')
+        le[li[0]]=li[1]
+    o.close()
 
-    fp_o = open("lengths.txt", 'rb')
-
-    # get length of file
-    fp_o.seek(0,2)
-    end = fp_o.tell()
-    fp_o.seek(0,0)
-
-    o = Unpickler(fp_o)
-    while fp_o.tell() < end:
-        file = o.load()
-        length = o.load()
-
-        le[file] = length
-    fp_o.close()
 
     return le  
 
@@ -98,7 +76,7 @@ def search(dict, post, queries, out):
     di = getdict(dict)
     q, pos = getqueries(queries)
     l = getlength()
-    p = open(post, 'rb')
+    p = open(post, 'r')
     o = open(out, 'w')
     for query in q:
         syn_query = query2syn_query(query)

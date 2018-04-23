@@ -125,38 +125,32 @@ def index(input, dict, post):
 
     print("prepare dictionary")
     #prepare dictionary for output to postings list by including term freqencies
-    for word in d:
-        entry = []
-        for doc in d[word]:
-            entry.append((doc, documents[doc][word], positions[doc][word]))
-        d[word] = entry
+    for key in d:
+        tf = []
+        for doc in d[key]:
+            tf.append((doc, documents[doc][key], positions[doc][key]))
+        d[key]=tf
 
-    fp_o = open(dict, 'wb')
-    o = Pickler(fp_o)
-
-    fp_p = open(post, 'wb')
-    p = Pickler(fp_p)
-
-    fp_le = open("lengths.txt", 'wb')
-    le = Pickler(fp_le)
+    o = open(dict, 'w')
+    p = open(post, 'w')
+    le = open("lengths.txt",'w')
 
     print("start write")
     #writes to the posting list and dictionary file                     
-    for word in sorted(d):
-        o.dump(word)
-        o.dump(df[word])
-        o.dump(fp_p.tell())
+    for i in sorted(d):
+        try:
+            o.write("%s %s %s\n" % (i.encode('utf-8'), df[i], p.tell()))
+            p.write("%s\n"%(d[i],))
+        except:
+            print(i) 
 
-        p.dump(d[word])
 
     #output out all document lengths
     for file in copy:
-        le.dump(file)
-        le.dump(length[file])
+        le.write("%s %s\n" % (file, length[file]))  
 
-    fp_o.close()
-    fp_p.close()
-    fp_le.close()
+    o.close()
+    p.close()
 
 def usage():
     print("usage: " + sys.argv[0] + " -i directory-of-documents -d dictionary-file -p postings-file")
