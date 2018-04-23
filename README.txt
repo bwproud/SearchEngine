@@ -1,5 +1,5 @@
-Student Number: A0179356N, JOHN_ESPENHAHN
-Email: E0268725@u.nus.edu, JOHN_ESPENHAHN@u.nus.edu
+﻿Student Number: A0179356N, A0179332B
+Email: E0268725@u.nus.edu, E0268701@u.nus.edu
 
 == Python Version ==
 
@@ -53,7 +53,7 @@ expressly vow that I have followed the Facebook rule in discussing
 with others in doing the assignment and did not take notes (digital or
 printed) from the discussions.  
 
-[X] I, JOHN_ESPENHAHN, certify that I have followed the CS 3245 Information
+[X] I, E0268701, certify that I have followed the CS 3245 Information
 Retrieval class guidelines for homework assignments.  In particular, I
 expressly vow that I have followed the Facebook rule in discussing
 with others in doing the assignment and did not take notes (digital or

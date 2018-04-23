@@ -70,7 +70,7 @@ def evaluate(di, le, po, out, query, syn):
     postings = get_posts(di, po, syn)
     candidates = get_candidates(postings, le)
 
-    q_vector = expand_query(postings,candidates,q_vector)
+    # q_vector = expand_query(postings,candidates,q_vector)
 
     window = get_window(candidates)
     return get_final(candidates, q_vector, window)
@@ -295,7 +295,7 @@ def get_final(candidates, q_vector, window):
 
     # Cutoff
     max_score = final[0][1]
-    threashold = max_score * 0.3
+    threashold = max_score * 0.2
     final = list(filter(lambda x: x[1] > threashold, final))
 
     #print(final[:10])

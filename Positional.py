@@ -19,7 +19,7 @@ def positional(di, le, po, out, query, syn):
         in the query, and then gets the final listing of the 10 highest ranked documents
         for the query using the previous 3 results. These 10 documents are then written to a file
     """
-    TOP_N = 100
+    TOP_N = 3000
 
     print("positional")
     print(syn)
@@ -61,8 +61,6 @@ def positional(di, le, po, out, query, syn):
     # Get sorted by score
     f = heapq.nlargest(min(len(scores),TOP_N), scores.values(), key=lambda x: x[1])
     f = [ str(x[0]) for x in f ]
-
-    print(f)
     out.write(" ".join(f)+"\n")
 
 def present(lists, end):
