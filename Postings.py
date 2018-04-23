@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # encoding: utf-8
-import _pickle as pickle
+from ast import literal_eval
 
 def get_postings(word, di, po):
   """
@@ -9,7 +9,7 @@ def get_postings(word, di, po):
     po the postings file 
     returns: [ (docID,wf,[positions,...]),... ]
   """
-  resp = di.get(j, [])
+  resp = di.get(word, [])
   if len(resp) > 0:    
       po.seek(int(resp[1]))
       line=literal_eval(po.readline())

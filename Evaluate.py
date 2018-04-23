@@ -122,7 +122,7 @@ def get_candidates(postings, le):
     candidates = {}
     for word in postings:
         for i in postings[word]:
-            doc = i[0]
+            doc = str(i[0])
             if not candidates.get(doc, False):
                 candidates[doc]={}
             if candidates[doc].get(word, False):

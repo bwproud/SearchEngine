@@ -22,7 +22,7 @@ def sanitize(phrase):
 def getdict(dict):
     """retrieves and populates the dictionary from the dictionary file"""
     di={}
-    o = open(dict, 'r')
+    o = open(dict, 'r', encoding='utf8')
     for line in o:
         li=line.strip().split(' ')
         di[li[0]]=(int(li[1]), li[2])
