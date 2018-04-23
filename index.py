@@ -14,7 +14,6 @@ from nltk.corpus import stopwords
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 from multiprocessing import Pool
-from _pickle import Pickler
 
 def sanitize_sentence(phrase):
     """Sanitizes sentences by removing special characters"""
@@ -90,7 +89,7 @@ def index(input, dict, post):
         with Pool(processes=cpus) as pool:
             result = pool.map(func=index_row, iterable=reader)
             for row in result:
-                docID = int(row[0])
+                docID = row[0]
                 doc_documents = row[1]
                 doc_positions = row[2]
 
@@ -134,7 +133,6 @@ def index(input, dict, post):
     o = open(dict, 'w')
     p = open(post, 'w')
     le = open("lengths.txt",'w')
-
     print("start write")
     #writes to the posting list and dictionary file                     
     for i in sorted(d):
@@ -143,7 +141,6 @@ def index(input, dict, post):
             p.write("%s\n"%(d[i],))
         except:
             print(i) 
-
 
     #output out all document lengths
     for file in copy:
