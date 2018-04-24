@@ -27,7 +27,8 @@ def query_parser(di, le, po, out, query, syn):
         for j in range(len(se)):
             scalar = 0
             for k in range(len(se[j])):
-                scalar+=math.log((float(len(le))+1)/di[se[j][k][0]][0],10)
+                if di.get(se[j][k][0],False):
+                    scalar+=math.log((float(len(le))+1)/di[se[j][k][0]][0],10)
             factor = 0 if len(level[j]) == 0 else (float(1)/len(level[j]))* scalar
             level[j]=(factor,level[j])
         level = sorted(level, key = lambda x: x[0], reverse = True)
