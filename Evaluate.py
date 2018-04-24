@@ -158,10 +158,10 @@ def sort(li):
     li = sorted(li,key=lambda x: x[1], reverse=True)
     
     #sort on window length
-    li = sorted(li,key=lambda x: x[3])
+    #li = sorted(li,key=lambda x: x[3])
     
     #then sort on number of present words
-    li = sorted(li,key=lambda x: x[2], reverse=True)
+    #li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
 
 def get_final(candidates, q_vector, window):

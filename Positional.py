@@ -19,6 +19,8 @@ def positional(di, le, po, out, query, syn):
         in the query, and then gets the final listing of the 10 highest ranked documents
         for the query using the previous 3 results. These 10 documents are then written to a file
     """
+    TOP_N = 6000
+
     print "positional"
     print syn
     phrases = [i for i in query if i.count(" ")]
@@ -27,16 +29,38 @@ def positional(di, le, po, out, query, syn):
     final = []
     f = []
     for i in words:
-        final.append(list(set([j[0] for j in words[i]])))
+        word_final = {}
+        for entry in words[i]:
+            docID = entry[0]
+            tf = entry[1]
+
+            if docID in word_final:
+                doc_entry = word_final[docID]
+                doc_entry[1] = max(doc_entry[1], tf)
+            else:
+                word_final[docID] = [ docID, tf ]
+
+        final.append(list(word_final.values()))
+        
     for i in phrases:
         syn_query = query2syn_query(i.split(" "))
-        final.append(get_positional_posts(di, po, syn_query))
-    for i in final:
-        for j in i:
-            pdocs[j] = pdocs.get(j,0)+1
-            if pdocs[j] == len(query):
-                f.append(str(j))
-    print f
+
+        tf = 1+math.log(1.5*len(syn_query), 10)
+        final.append([ [ docID, tf ] for docID in get_positional_posts(di, po, syn_query) ])
+
+    scores = {} # { [docID]: [ docID, score ] }
+    for word_postings in final:
+        for doc_entry in word_postings:
+            docID = doc_entry[0]
+            tf = doc_entry[1]
+
+            if docID in scores:
+                scores[docID][1] += tf
+            else:
+                scores[docID] = [ docID, tf ]
+
+    f = heapq.nlargest(min(len(scores),TOP_N), scores.values(), key=lambda x: x[1])
+    f = [ str(x[0]) for x in f ]
     out.write(" ".join(f)+"\n")
 
 def present(lists, end):
