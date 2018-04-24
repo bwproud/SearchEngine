@@ -1,0 +1,19 @@
+Synonym Query Expansion:
+------------------------------------
+
+Our implementation of synonym query expansion uses NLTK WordNet to find synonyms for terms. Given a word, and its part-of-speech, we find synonyms with "similar" parts-of-speech (discussed more later). We limit the results to the first 3 synonyms for each "similar" part-of-speech. So for a noun, we return up to 3 noun synonyms, 3 verb synonyms, and 3 adjective synonyms. This helps avoid over-expanding the query and gives us a diverse set of synonyms. One exception to this limit is with alternate definitions. When there are multiple possible definitions for the given word, we return an additional synonym for each alternate definition (so up to 3 additional synonyms for a given part-of-speech).
+
+Once we have all the synonyms for each word in the query, we continue with the search as normal. The only differance is each synonym is treated as an equivalent substitute for the original word in the query. This simply involves merging the posting lists for the original word and all the returned synonyms.
+
+Given a term, NLTK is used to do part-of-speech tagging. This tagging is used to limit the synonyms we return by the synonym's part-of-speech. For example, if the term is a noun, we only return synoynms that are nouns, verbs, or adjectives (ignoring adverbs). This simple optimization improves our precision by about 10 percent in tests. These tests used the three sample queries. This optimization did not reduce our accuracy, but reduced the size of the result set by about 10 percent on average.
+
+------------------------------------
+Rocchios
+------------------------------------
+Rocchios algorithm uses documents relevant to a given query to adjust the query's vector. The query vector is translated in the vector space by using the mean of the relevant documents' vectors. 
+
+For the relevant documents, we use the documents with scores within 10 percent of the maximum score after searching for the original query. Then for each query term, it sums the corresponding vector value from the top documents. Then it divides by the number of returned documents. This gives us the mean document vector for the documents with the top 10 percent of scores. This is then scaled down by some alpha (we use 0.8) and added to the original query vector. This gives us a new query vector, which is then normalized. The query process is repeated with this new vector, and the results from that query are returned to the user.
+
+Because we use the results from the original query to translate the vector, this mainly reinforces the tf-idf results. Because the vector is modified, it gives a slightly different ranked ordering, which may help improve our average precision, but our test results are not conclusive.  
+
+Our implementation treats the original word and synonyms as equivalent. This means the algorithm can pick up documents with synonyms and shift the query towards them in the vector space. This can help shift towards relevant synonyms, and away from irrelevant ones.

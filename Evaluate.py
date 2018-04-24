@@ -118,6 +118,7 @@ def get_candidates(postings, le):
         returned in get_posts(). If a document is seen in a postings list,
         it is added to a dictionary, along with the word(or words) it is
         associated with and the term frequencies of those words in the document
+        returns { docID: { word: (wf, postings) } }
     """
     candidates = {}
     for word in postings:
@@ -212,33 +213,27 @@ def sort(li):
     # li = sorted(li,key=lambda x: x[2], reverse=True)
     return li
 
-def get_tf(po,docID,token):
+def get_tf(po,candidates,docID,token):
     """
     po a postings dictionary that contains the postings for the token
+    candidates { docID: (wf, postings) }
     docID the document we want to get the tf for
     token the term we want the tf for
     """ 
-    if not token in po: return 0.0 
-    postings = po[token] # [ (docID,wf,[positions,...]),... ]
-    for posting in postings:
-        posting_docID = posting[0]
-        if posting_docID == docID:
-            return 1.0 # posting[1] # wf
-    return 0.0
+    return candidates[docID].get(token, [0])[0]
 
 
 def expand_query(po,candidates,q_vector):
     ALPHA = 0.8
-    tops = get_top_candidates(candidates,q_vector,0.8)
+    tops = get_top_candidates(candidates,q_vector,0.9)
+    if len(tops) == 0: return q_vector
 
     sums = {}
     for token in q_vector:
         su = 0
         for top_docID in tops:
-            su += get_tf(po,top_docID,token)
+            su += get_tf(po,candidates,top_docID,token)
         sums[token] = su
-
-    print(sums)
 
     res = {}
     res_su = 0
@@ -271,7 +266,8 @@ def get_top_candidates(candidates, q_vector, threshold):
         top.append((doc, su))
     
     #then sort on document ranking
-    top = sorted(filter(lambda x: x[1] > max_score*threshold, top), key=lambda x: x[1]) # heapq.nlargest(min(len(top),5), top, key=lambda x: x[1])
+    top = sorted(filter(lambda x: x[1] > max_score*threshold, top), key=lambda x: x[1], reverse=True) # heapq.nlargest(min(len(top),5), top, key=lambda x: x[1])
+
     #return just the document ids of the documents with the highest rankings
     return [i[0] for i in top]
 
