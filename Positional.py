@@ -7,7 +7,7 @@ import getopt
 import time
 import math
 import heapq
-import Postings
+from Postings import get_postings
 from ast import literal_eval
 from nltk.stem import PorterStemmer
 from Synonym import query2syn_query
@@ -88,7 +88,7 @@ def get_posts(di, po, syn):
             if words.get(j, False): continue
 
             #only retrieves postings with corresponding dictionary entries
-            postings = Postings.get_postings(word, di, po)
+            postings = get_postings(word, di, po)
             if postings != None:
                 words[word]=words.get(word,[])+postings
 
@@ -113,7 +113,7 @@ def get_positional_posts(di, po, query):
             word = syn_list[k]
 
             #only retrieves postings with corresponding dictionary entries
-            postings = Postings.get_postings(word, di, po)
+            postings = get_postings(word, di, po)
             if postings != None:
                 for j in postings:
                     li = docs.get(j[0], {})
@@ -169,7 +169,7 @@ def get_positional_posts_with_tf(di, po, query):
             word = syn_list[k]
 
             #only retrieves postings with corresponding dictionary entries
-            postings = Postings.get_postings(word, di, po)
+            postings = get_postings(word, di, po)
             if postings != None:
                 for j in postings:
                     li = docs.get(j[0], {})
