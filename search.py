@@ -19,13 +19,34 @@ def sanitize(phrase):
     """Sanitizes input by removing special characters, numbers, and collapsing whitespace"""
     return re.sub("[!@#$%^&()`:*;,.?/°_-]",'',phrase)
 
+BSTRING_PATTERN = re.compile("^b'.+'")
 def getdict(dict):
     """retrieves and populates the dictionary from the dictionary file"""
     di={}
+
     o = open(dict, 'r', encoding='utf8')
-    for line in o:
-        li=line.strip().split(' ')
-        di[li[0]]=(int(li[1]), li[2])
+
+    done = False
+    while not done:
+        try:
+            for line in o:
+                li=line.strip().split(' ')
+                
+                # if BSTRING_PATTERN.match(li[0]):
+                #    li[0] = li[0][2:-1] # remove 'b...'
+
+                di[li[0]]=(int(li[1]), li[2])
+
+            done = True
+        except Exception as e:
+            if isinstance(e, UnicodeDecodeError):
+                print('not utf8')
+
+                o.close()
+                o = open(dict, 'r')
+            else:
+                sys.exit(2)
+
     o.close()
     return di  
 
